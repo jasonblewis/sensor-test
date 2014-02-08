@@ -33,6 +33,7 @@ unset data_save
 unset data_location
 unset gain
 
+i2cbus=0
 function user {
 echo "Choose data time delay (s)"
 read time_delay
@@ -63,26 +64,26 @@ fi
 function setup {
 echo "## Setting up the sensor ##"
 # Turn on the device
-i2cset -y 3 0x39 0x80 0x03 b
+i2cset -y $i2cbus 0x39 0x80 0x03 b
 sleep 1
 # Set the timers
 if [ "$gain" = "1" ]; then
-   i2cset -y 3 0x39 0x81 0x12 b # 16x Gain 402ms intergration time
+   i2cset -y $i2cbus 0x39 0x81 0x12 b # 16x Gain 402ms intergration time
 else
-   i2cset -y 3 0x39 0x81 0x02 b # 1x Gain 402ms intergration time
+   i2cset -y $i2cbus 0x39 0x81 0x02 b # 1x Gain 402ms intergration time
 fi
 
 sleep 2
 
 #Status Messages
-if [ "$(printf "%d\n" `i2cget -y 3 0x39 0x80 b`)" = "51" ]; then
+if [ "$(printf "%d\n" `i2cget -y $i2cbus 0x39 0x80 b`)" = "51" ]; then
    echo "The device is online"
 else
    echo "The device is offline"
    cleanup 
 fi
 
-if [ "$(printf "%d\n" `i2cget -y 3 0x39 0x81 b`)" = "18" ]; then
+if [ "$(printf "%d\n" `i2cget -y $i2cbus 0x39 0x81 b`)" = "18" ]; then
    echo "Set to 16x Gain"
 else
    echo "Set to 1x Gain"
@@ -106,11 +107,11 @@ function cleanup {
  #Turn off the device
  echo ""
  echo "Attempting to turn off the device"
- i2cset -y 3 0x39 0x80 0x00 b #Turn sensor off
+ i2cset -y $i2cbus 0x39 0x80 0x00 b #Turn sensor off
  sleep 2 #Wait for a bit
  
  #Display the status of the sensor
- if [ "$(printf "%d\n" `i2cget -y 3 0x39 0x00 b`)" = "0" ]; then
+ if [ "$(printf "%d\n" `i2cget -y $i2cbus 0x39 0x00 b`)" = "0" ]; then
     echo "The sensor is off"
     if [ "$data_save" = "1" ]; then
        echo "################################"
@@ -147,8 +148,8 @@ function save_data {
 function collect_data {
  while [ "1" = "1" ]; do
 
-  full=$(printf "%d\n" `i2cget -y 3 0x39 0xac w`) #CH0
-  infra=$(printf "%d\n" `i2cget -y 3 0x39 0xae w`) #CH1
+  full=$(printf "%d\n" `i2cget -y $i2cbus 0x39 0xac w`) #CH0
+  infra=$(printf "%d\n" `i2cget -y $i2cbus 0x39 0xae w`) #CH1
   if [ "$full" = "0" ]; then
      vis=0
   else
